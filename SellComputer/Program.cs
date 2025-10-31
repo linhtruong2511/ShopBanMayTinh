@@ -1,23 +1,27 @@
 using Microsoft.EntityFrameworkCore;
 using SellComputer.Data;
-
+using DotNetEnv;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+Env.Load();
+
+// Đặt biến môi trường 
+builder.Configuration.AddEnvironmentVariables();
+
+var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+
 builder.Services.AddControllers();
 
-// Add DbContext
+// Add DbContext dùng connection string từ .env
 builder.Services.AddDbContext<ShopBanMayTinhContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString));
 
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -27,5 +31,4 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
-
 app.Run();
