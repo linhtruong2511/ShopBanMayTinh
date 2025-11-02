@@ -19,5 +19,6 @@ namespace SellComputer.Models.DTOs.Computers
 
         public Guid? CategoriesId { get; set; }
 
+        
     }
 }

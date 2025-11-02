@@ -36,6 +36,9 @@ public class AuthController : BaseApiController
     [HttpPost("register")]
     public IActionResult SignUp([FromBody] AddUserDto userDto)
     {
+        // TODO: Check if user email already exists
+
+
         var role = dbContext.Roles.FirstOrDefault(r => r.Name == "USER");
         var RoleId = role?.Id;
         try
