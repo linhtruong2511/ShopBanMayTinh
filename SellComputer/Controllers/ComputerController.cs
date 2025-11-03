@@ -66,8 +66,8 @@ namespace SellComputer.Controllers
         public IActionResult UpdateComputers(Guid id, [FromForm] UpdateComputerDto updateComputerDto)
         {
             var computer = dbContext.Computers
-        .Include(c => c.Images) // Quan trọng: include images để load ảnh hiện tại
-        .FirstOrDefault(c => c.Id == id);
+                .Include(c => c.Images) // Quan trọng: include images để load ảnh hiện tại
+                .FirstOrDefault(c => c.Id == id);
 
             if (computer is null)
             {
@@ -107,7 +107,7 @@ namespace SellComputer.Controllers
                     return BadRequest(new { Error = "Ảnh không được vượt quá 5MB" });
                 }
 
-                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
                 var extension = Path.GetExtension(updateComputerDto.Images.FileName).ToLower();
                 if (!allowedExtensions.Contains(extension))
                 {
@@ -158,9 +158,9 @@ namespace SellComputer.Controllers
         }
 
 
-       
+
         [HttpPost]
-        public IActionResult AddComputer([FromForm]AddComputerDto addComputerDto )
+        public IActionResult AddComputer([FromForm] AddComputerDto addComputerDto)
         {
             // Validate CategoriesId tồn tại
             if (addComputerDto.CategoriesId.HasValue)
@@ -220,6 +220,16 @@ namespace SellComputer.Controllers
             {
                 return NotFound();
             }
+            // Remove all image references from the computer
+            var imgs = dbContext.Images.Where(img => img.ProductId == id).ToList();
+            if (imgs.Count > 0)
+            {
+                foreach (var img in imgs)
+                {
+                    dbContext.Images.Remove(img);
+                }
+            }
+
             dbContext.Computers.Remove(computer);
             dbContext.SaveChanges();
             return Ok(computer);
@@ -250,6 +260,7 @@ namespace SellComputer.Controllers
                 // Tìm kiếm với JOIN bảng Categories và không phân biệt hoa thường
                 var query = dbContext.Computers
                     .Include(c => c.Categories)
+                    .Include(c => c.Images)
                     .Where(c =>
                         (c.Name != null && c.Name.ToLower().Contains(keywordLower)) ||
                         (c.Manufacturer != null && c.Manufacturer.ToLower().Contains(keywordLower)) ||
@@ -262,25 +273,25 @@ namespace SellComputer.Controllers
                 var totalPages = (int)Math.Ceiling(totalComputers / (double)pageSize);
 
                 // Lấy dữ liệu cho trang hiện tại với thông tin Category đầy đủ
-                var computers = query
-                    .OrderBy(c => c.Name)
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Select(c => new
-                    {
-                        Id = c.Id,
-                        Name = c.Name,
-                        Manufacturer = c.Manufacturer,
-                        Price = c.Price,
-                        Quantity = c.Quantity,
-                        CategoriesId = c.CategoriesId,
-                        CategoryName = c.Categories != null ? c.Categories.Name : "Không có danh mục",
-                        CategoryDescription = c.Categories != null ? c.Categories.Description : null,
-                        CreateAt = c.CreateAt,
-                        UpdateAt = c.UpdateAt,
-                        Images = c.Images
-                    })
-                    .ToList();
+                // var computers = query
+                //     .OrderBy(c => c.Name)
+                //     .Skip((page - 1) * pageSize)
+                //     .Take(pageSize)
+                //     .Select(c => new
+                //     {
+                //         Id = c.Id,
+                //         Name = c.Name,
+                //         Manufacturer = c.Manufacturer,
+                //         Price = c.Price,
+                //         Quantity = c.Quantity,
+                //         CategoriesId = c.CategoriesId,
+                //         CategoryName = c.Categories != null ? c.Categories.Name : "Không có danh mục",
+                //         CategoryDescription = c.Categories != null ? c.Categories.Description : null,
+                //         CreateAt = c.CreateAt,
+                //         UpdateAt = c.UpdateAt,
+                //         Images = c.Images
+                //     })
+                //     .ToList();
 
                 // Trả về kết quả với thông tin phân trang
                 return Ok(new
@@ -290,7 +301,7 @@ namespace SellComputer.Controllers
                     PageSize = pageSize,
                     CurrentPage = page,
                     TotalPages = totalPages,
-                    Data = computers
+                    Data = query
                 });
             }
             catch (Exception ex)
@@ -303,10 +314,11 @@ namespace SellComputer.Controllers
             }
         }
 
-        [HttpPost("upload-image")]
+        [HttpPost("upload-image/{computerId}")]
         public IActionResult UploadImage(IFormFile image, Guid computerId)
         {
             var computer = dbContext.Computers.Find(computerId);
+            System.Console.WriteLine("ComputerId: " + computerId);
             if (computer is null)
             {
                 return NotFound("Máy tính không tồn tại trong hệ thống");
@@ -334,7 +346,7 @@ namespace SellComputer.Controllers
             dbContext.Images.Add(imageEntity);
             dbContext.SaveChanges();
 
-            return Ok(image);
+            return Ok(imageEntity);
         }
     }
 }

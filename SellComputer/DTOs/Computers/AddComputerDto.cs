@@ -18,10 +18,9 @@ namespace SellComputer.Models.DTOs.Computers
         [Range(0, int.MaxValue, ErrorMessage = "Số lượng không được âm")]
         public int Quantity { get; set; }
         public string? Description { get; set; }
-    
+
+        [Required(ErrorMessage = "Mã danh mục là bắt buộc")]
         public Guid? CategoriesId { get; set; }
         public IFormFile Images { get; set; }
-
-        
     }
 }
