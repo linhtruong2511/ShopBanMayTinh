@@ -16,7 +16,18 @@ namespace SellComputer.Controllers
         public IActionResult GetAllCategories()
         {
             var categories = dbContext.Categories.ToList();
-            return Ok(categories);
+            List<CategoryResponse> categoryResponses = new List<CategoryResponse>();
+            // Count total product in category
+            foreach (var category in categories)
+            {
+                var total = dbContext.Computers.Count(c => c.CategoriesId == category.Id);
+
+                CategoryResponse response = new CategoryResponse(category, total);
+
+                categoryResponses.Add(response);
+            }
+
+            return Ok(categoryResponses);
         }
 
         [HttpPost]
